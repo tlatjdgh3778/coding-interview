@@ -75,7 +75,7 @@ services:
       - ./plugin-sdk:/app/plugin-sdk:ro
       - ./shared:/app/shared:ro
       - ./api-client:/app/api-client:ro
-      - ./ui-kit:/app/ui-kit:ro
+      - ./ui-kit:/app/ui-kit
       - ./scripts:/app/scripts:ro
       - pnpm-store:/pnpm/store
     ports:
@@ -111,7 +111,7 @@ services:
       - ./plugin-sdk:/app/plugin-sdk:ro
       - ./shared:/app/shared:ro
       - ./api-client:/app/api-client:ro
-      - ./ui-kit:/app/ui-kit:ro
+      - ./ui-kit:/app/ui-kit
       - ./scripts:/app/scripts:ro
       - ./test-results:/app/test-results
       - pnpm-store:/pnpm/store
