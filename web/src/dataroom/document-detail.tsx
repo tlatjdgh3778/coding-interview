@@ -5,7 +5,8 @@ import { useI18n } from "../i18n";
 import { StatusBadge } from "./status-badge";
 
 export function DocumentDetail({ userId, workspaceId }: { userId: string; workspaceId: string }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const format = new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" });
   const { documentId = "" } = useParams();
   const location = useLocation();
   const document = useDocument(userId, workspaceId, documentId);
@@ -42,6 +43,12 @@ export function DocumentDetail({ userId, workspaceId }: { userId: string; worksp
               <dt className="text-caption text-muted-foreground">{t.documentStatus}</dt>
               <dd>
                 <StatusBadge status={doc.status} />
+              </dd>
+            </div>
+            <div>
+              <dt className="text-caption text-muted-foreground">{t.documentCreatedAt}</dt>
+              <dd>
+                <time dateTime={doc.createdAt}>{format.format(new Date(doc.createdAt))}</time>
               </dd>
             </div>
           </dl>

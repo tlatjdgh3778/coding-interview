@@ -7,4 +7,8 @@ export type DocumentDetail = {
   fileName: string;
   status: DocumentStatus;
   content: string;
+  /**
+   * ISO 8601 UTC 문자열
+   */
+  createdAt: string;
 };

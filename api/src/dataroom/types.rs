@@ -77,6 +77,8 @@ pub struct DocumentDetail {
     pub file_name: String,
     pub status: DocumentStatus,
     pub content: String,
+    /// ISO 8601 UTC 문자열
+    pub created_at: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

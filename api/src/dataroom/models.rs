@@ -18,6 +18,7 @@ struct DocumentDetailRow {
     file_name: String,
     status: String,
     content: String,
+    created_at: String,
 }
 
 fn parse_status(value: &str) -> Result<DocumentStatus, ApiError> {
@@ -84,7 +85,8 @@ pub async fn get_document(
     document_id: &str,
 ) -> Result<Option<DocumentDetail>, ApiError> {
     let row = sqlx::query_as::<_, DocumentDetailRow>(
-        "SELECT id, title, file_name, status, content \
+        "SELECT id, title, file_name, status, content, \
+                to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS created_at \
          FROM documents WHERE workspace_id = $1 AND id = $2",
     )
     .bind(workspace_id)
@@ -100,6 +102,7 @@ pub async fn get_document(
             file_name: row.file_name,
             status: parse_status(&row.status)?,
             content: row.content,
+            created_at: row.created_at,
         })
     })
     .transpose()

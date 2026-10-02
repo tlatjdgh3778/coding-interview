@@ -30,7 +30,7 @@
 - `documents.list` 요청 `params`는 `{ "query": "string" }`이고 `query`는 생략할 수 있으며 `params`가 `null`이어도 전체 목록을 반환한다. [제안 후 승인]
 - `documents.list` 응답 `result`는 `{ "documents": [ { "id": "string", "title": "string", "fileName": "string", "status": "ready|processing|failed", "createdAt": "string" } ] }`이고 항목에 본문은 없다. [제안 후 승인]
 - `documents.get` 요청 `params`는 `{ "documentId": "string" }`이다. [제안 후 승인]
-- `documents.get` 응답 `result`는 `{ "document": { "id": "string", "title": "string", "fileName": "string", "status": "ready|processing|failed", "content": "string" } }`이고 `createdAt`은 없다. [제안 후 승인]
+- `documents.get` 응답 `result`는 `{ "document": { "id": "string", "title": "string", "fileName": "string", "status": "ready|processing|failed", "content": "string", "createdAt": "string" } }`이다. [사용자 결정]
 - 오류 응답은 400 `invalid_input`(검색어 trim 후 100자 초과), 401 `not_authenticated`(미인증), 403 `forbidden`(요청 `workspaceId` 불일치), 404 `not_found`(없는 자료 ID 또는 다른 workspace의 자료 ID), 500 `storage_error`(DB 오류)로 구분한다. [제안 후 승인]
 - 작성 시각은 ISO 8601 UTC 문자열로 반환한다. [사용자 결정]
 - 화면 URL은 목록 `/workspace/:id`, 상세 `/workspace/:id/documents/:documentId`이고, 검색어는 `?q=`로 유지한다. [사용자 결정]
