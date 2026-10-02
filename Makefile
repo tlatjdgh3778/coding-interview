@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := dev
 
-.PHONY: db dev stop reset-db logs local install check gen-ts gen-ts-docker check-gen-ts check-gen-ts-docker check-docker test-e2e
+.PHONY: db dev stop reset-db logs local install check gen-ts gen-ts-docker check-gen-ts check-gen-ts-docker check-docker test-api test-e2e
 
 DB_PORT ?= 5548
 DATABASE_URL ?= postgres://dataroom_interview:dataroom_interview@127.0.0.1:$(DB_PORT)/dataroom_interview
@@ -52,6 +52,9 @@ check-gen-ts-docker:
 check-docker: db check-gen-ts-docker
 	docker compose run --rm --no-deps web sh -c 'pnpm lint && pnpm build'
 	docker compose run --rm --no-deps api sh -c 'rustup component add rustfmt && cargo fmt --manifest-path api/Cargo.toml -- --check && cargo check --locked --manifest-path api/Cargo.toml --all-targets --all-features'
+
+test-api: db
+	docker compose run --rm --no-deps api cargo test --locked --manifest-path api/Cargo.toml --test dataroom_documents
 
 test-e2e: dev
 	docker compose --profile test run --rm --no-deps playwright
