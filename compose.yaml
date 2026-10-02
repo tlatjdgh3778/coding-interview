@@ -74,7 +74,7 @@ services:
       - ./plugins:/app/plugins:ro
       - ./plugin-sdk:/app/plugin-sdk:ro
       - ./shared:/app/shared:ro
-      - ./api-client:/app/api-client:ro
+      - ./api-client:/app/api-client
       - ./ui-kit:/app/ui-kit
       - ./scripts:/app/scripts:ro
       - pnpm-store:/pnpm/store
