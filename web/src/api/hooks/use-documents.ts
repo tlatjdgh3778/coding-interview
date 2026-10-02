@@ -1,5 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { dataroomRpcHandler } from "@interview/api-client/handlers/dataroomRpcHandler";
+import type { CreateDocumentRequest } from "@interview/api-types/CreateDocumentRequest";
 import type { GetDocumentResponse } from "@interview/api-types/GetDocumentResponse";
 import type { ListDocumentsResponse } from "@interview/api-types/ListDocumentsResponse";
 
@@ -29,5 +30,21 @@ export function useDocument(userId: string, workspaceId: string, documentId: str
       return (response.result as GetDocumentResponse).document;
     },
     retry: (count, error) => !(error as { status?: number }).status && count < 2,
+  });
+}
+
+export function useCreateDocument(userId: string, workspaceId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (params: CreateDocumentRequest) => {
+      const response = await dataroomRpcHandler({
+        workspaceId,
+        method: "documents.create",
+        params,
+      });
+      return (response.result as GetDocumentResponse).document;
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: [userId, workspaceId, "documents"] }),
   });
 }
