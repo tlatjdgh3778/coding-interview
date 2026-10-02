@@ -54,7 +54,7 @@ check-docker: db check-gen-ts-docker
 	docker compose run --rm --no-deps api sh -c 'rustup component add rustfmt && cargo fmt --manifest-path api/Cargo.toml -- --check && cargo check --locked --manifest-path api/Cargo.toml --all-targets --all-features'
 
 test-api: db
-	docker compose run --rm --no-deps api cargo test --locked --manifest-path api/Cargo.toml --test dataroom_documents
+	docker compose run --rm --no-deps api cargo test --locked --manifest-path api/Cargo.toml
 
 test-e2e: dev
 	docker compose --profile test run --rm --no-deps playwright

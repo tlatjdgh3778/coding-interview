@@ -3,6 +3,7 @@ import { Route, Routes, useParams } from "react-router-dom";
 import type { HostSession } from "../../../shared/platform";
 import { useI18n } from "../i18n";
 import { DocumentDetail } from "./document-detail";
+import { DocumentRegister } from "./document-register";
 import { DocumentList } from "./document-list";
 
 export function DataroomApp() {
@@ -15,10 +16,18 @@ export function DataroomApp() {
     enabled: false,
   });
   const userId = session.data?.user.id;
+  const role = session.data?.user.role;
   if (!userId) return <p role="status">{t.loading}</p>;
   return (
     <Routes>
-      <Route index element={<DocumentList userId={userId} workspaceId={workspaceId} />} />
+      <Route
+        index
+        element={<DocumentList userId={userId} workspaceId={workspaceId} role={role} />}
+      />
+      <Route
+        path="documents/new"
+        element={<DocumentRegister userId={userId} workspaceId={workspaceId} role={role} />}
+      />
       <Route
         path="documents/:documentId"
         element={<DocumentDetail userId={userId} workspaceId={workspaceId} />}

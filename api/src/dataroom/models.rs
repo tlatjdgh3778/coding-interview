@@ -107,3 +107,42 @@ pub async fn get_document(
     })
     .transpose()
 }
+
+/// 자료 한 건 저장. 같은 (workspace, 작성자, 내용) 조합이 이미 있으면 409.
+/// `id` 충돌 등 그 밖의 DB 오류는 500(storage_error)이다.
+pub async fn create_document(
+    pool: &PgPool,
+    id: &str,
+    workspace_id: &str,
+    created_by: &str,
+    title: &str,
+    file_name: &str,
+    content: &str,
+) -> Result<DocumentDetail, ApiError> {
+    let row = sqlx::query_as::<_, DocumentDetailRow>(
+        "INSERT INTO documents (id, workspace_id, created_by, title, file_name, status, content) \
+         VALUES ($1, $2, $3, $4, $5, 'ready', $6) \
+         ON CONFLICT ON CONSTRAINT documents_workspace_creator_content_key DO NOTHING \
+         RETURNING id, title, file_name, status, content, \
+                   to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS created_at",
+    )
+    .bind(id)
+    .bind(workspace_id)
+    .bind(created_by)
+    .bind(title)
+    .bind(file_name)
+    .bind(content)
+    .fetch_optional(pool)
+    .await
+    .map_err(ApiError::storage)?
+    .ok_or_else(ApiError::conflict)?;
+
+    Ok(DocumentDetail {
+        id: row.id,
+        title: row.title,
+        file_name: row.file_name,
+        status: parse_status(&row.status)?,
+        content: row.content,
+        created_at: row.created_at,
+    })
+}

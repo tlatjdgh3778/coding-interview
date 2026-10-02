@@ -1,12 +1,21 @@
 import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button, Input } from "@biyard/components";
 import { useDocuments } from "../api/hooks/use-documents";
 import { useI18n } from "../i18n";
 import { StatusBadge } from "./status-badge";
 
-export function DocumentList({ userId, workspaceId }: { userId: string; workspaceId: string }) {
+export function DocumentList({
+  userId,
+  workspaceId,
+  role,
+}: {
+  userId: string;
+  workspaceId: string;
+  role?: string;
+}) {
   const { t, locale } = useI18n();
+  const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const urlQuery = params.get("q") ?? "";
   const [input, setInput] = useState(urlQuery);
@@ -25,7 +34,14 @@ export function DocumentList({ userId, workspaceId }: { userId: string; workspac
   const items = documents.data ?? [];
   return (
     <section className="space-y-6">
-      <h1 className="text-heading-3 font-semibold">{t.documents}</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-heading-3 font-semibold">{t.documents}</h1>
+        {role === "company" ? (
+          <Button variant="outline" className="min-h-11" onClick={() => navigate(`${base}/new`)}>
+            {t.registerDocument}
+          </Button>
+        ) : null}
+      </div>
       <label className="flex max-w-md flex-col gap-2">
         {t.documentSearch}
         <Input type="search" value={input} onChange={(event) => setInput(event.target.value)} />

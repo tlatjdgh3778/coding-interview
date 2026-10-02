@@ -43,6 +43,10 @@ impl ApiError {
         Self(StatusCode::NOT_FOUND, "not_found", "Resource not found.")
     }
 
+    pub fn conflict() -> Self {
+        Self(StatusCode::CONFLICT, "conflict", "Resource already exists.")
+    }
+
     pub fn storage(error: impl std::fmt::Display) -> Self {
         eprintln!("Storage error: {error}");
         Self(
