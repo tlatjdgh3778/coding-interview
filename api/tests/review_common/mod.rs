@@ -147,3 +147,41 @@ pub async fn insert_document(pool: &PgPool, id: &str, workspace_id: &str, status
     .await
     .expect("insert document");
 }
+
+/// `reviews.update` params. 네 필드를 모두 채운다.
+pub fn update_params(criterion_id: &str, status: &str, comment: &str, evidence: &[&str]) -> Value {
+    json!({
+        "criterionId": criterion_id,
+        "status": status,
+        "comment": comment,
+        "evidenceDocumentIds": evidence,
+    })
+}
+
+/// `reviews`와 `review_evidence` 전체 행 스냅샷(불변 확인용).
+pub async fn snapshot(pool: &PgPool) -> (Vec<ReviewRow>, Vec<(String, String, String)>) {
+    (review_rows(pool).await, evidence_rows(pool).await)
+}
+
+/// DB `updated_at`을 마이크로초 에포크로 읽는다(시각 비교용).
+pub async fn updated_at_micros(pool: &PgPool, review_id: &str) -> i64 {
+    sqlx::query_scalar(
+        "SELECT (EXTRACT(EPOCH FROM updated_at) * 1000000)::bigint FROM reviews WHERE id = $1",
+    )
+    .bind(review_id)
+    .fetch_one(pool)
+    .await
+    .expect("select updated_at micros")
+}
+
+/// DB `updated_at`을 응답 표기(초 단위 ISO, UTC)로 바꾼 문자열.
+pub async fn updated_at_iso(pool: &PgPool, review_id: &str) -> String {
+    sqlx::query_scalar(
+        "SELECT to_char(updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') \
+         FROM reviews WHERE id = $1",
+    )
+    .bind(review_id)
+    .fetch_one(pool)
+    .await
+    .expect("select updated_at iso")
+}
