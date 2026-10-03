@@ -1,15 +1,15 @@
 # 스펙: 검토 작성·조회 (Review Plugin)
 
-- 상태: 완료
+- 상태: 확정
 - 최종 갱신: 2026-10-03
 
 ## 1. 목표
-투자자가 Review Plugin에서 초기 마이그레이션의 검토 기준(사업 이해·팀 구성·매출 현황)별로 `확인함(satisfied)` 또는 `추가 확인 필요(needs_information)`와 의견, 같은 데이터룸의 `ready` 자료 근거(자료 ID)를 최초 1회 저장하고, 저장한 검토와 근거 자료를 다시 읽는다. 검토 내용과 근거 자료는 구분해 저장하며, 자료 등록 성공만으로 기준이 충족된 것으로 판단하지 않는다. 범위는 기준 조회·검토 조회·검토 작성 RPC, 검토용 DB 마이그레이션, Plugin 화면이다. 기준 작성·저장된 검토 상세·근거 자료 미리보기는 모달로 표시한다. [사용자 결정]
+투자자가 Review Plugin에서 초기 마이그레이션의 검토 기준(사업 이해·팀 구성·매출 현황)별로 `확인함(satisfied)` 또는 `추가 확인 필요(needs_information)`와 의견, 같은 데이터룸의 `ready` 자료 근거(자료 ID)를 최초 1회 저장하고, 저장한 검토와 근거 자료를 다시 읽는다. 검토 내용과 근거 자료는 구분해 저장하며, 자료 등록 성공만으로 기준이 충족된 것으로 판단하지 않는다. 범위는 기준 조회·검토 조회·검토 작성 RPC, 검토용 DB 마이그레이션, Plugin 화면이다. 기준 작성·근거 자료 미리보기는 모달로 표시하며 저장한 검토의 수정은 `docs/specs/review-update.md`가 다룬다. [사용자 결정]
 
 ## 2. 비목표
-- 저장한 검토의 재수정(수정 화면, update API, upsert)은 이번 범위에서 제외한다. 이미 저장된 기준에 대한 재저장 요청은 기능으로 지원하지 않고 거부한다(§5.3 EC-10). [사용자 결정]
+- 저장한 검토의 수정(수정 화면, update API)은 `docs/specs/review-update.md`가 다루며 이 스펙의 범위가 아니다. 이 스펙의 `reviews.create`는 이미 저장된 기준에 대한 재저장 요청을 거부한다(§5.3 EC-10). [제안 후 승인]
 - 기준 생성·수정은 구현하지 않는다. [사용자 결정]
-- 수정 이력과 last-write-wins 동시 저장 규칙은 수정이 없으므로 이번 범위에서 다루지 않는다. [제안 후 승인]
+- 수정 이력과 last-write-wins 동시 저장 규칙은 `docs/specs/review-update.md`가 다루며 이 스펙에서는 다루지 않는다. [제안 후 승인]
 - 검토 현황(작성·미작성·확인함 집계)은 별도 단계로 남기고 이번 범위에서 제외한다. [제안 후 승인]
 - 본체 자료 상세 화면으로의 이동은 구현하지 않는다. 근거 자료는 Plugin 안의 모달로만 보여준다. [사용자 결정]
 - 근거 미리보기의 파일 크기·분류 태그·다운로드는 이번 범위에서 제외한다. [사용자 결정]
@@ -25,10 +25,9 @@
 - DoD-7: 기업 담당자의 `reviews.list`는 빈 목록을 반환한다 — 검증: Rust 통합 테스트(실 PostgreSQL, 투자자가 저장한 검토가 있는 상태) [사용자 결정]
 - DoD-8: 기업 담당자의 `reviews.create`는 입력 검증보다 먼저 403으로 거부되고 DB에 행이 생기지 않는다 — 검증: Rust 통합 테스트(실 PostgreSQL, 잘못된 입력을 함께 보내 권한 검사 순서 확인) [사용자 결정]
 - DoD-9: 요청 `workspaceId`가 사용자 workspace와 다르면 `criteria.list`·`reviews.list`·`reviews.create` 모두 403이 반환되고 행이 생기지 않는다 — 검증: Rust 통합 테스트(실 PostgreSQL) [제안 후 승인]
-- DoD-10: 투자자가 미작성 기준을 열면 목록 위에 작성 폼 모달(`/criteria/:id`)이 표시되고, 상태·의견·`ready` 근거를 입력해 저장하면 같은 경로의 같은 모달이 저장된 내용의 읽기 전용 상세로 바뀐다 — 검증: Playwright E2E(실 API·DB, mock 없음) [사용자 결정]
+- DoD-10: 투자자가 미작성 기준을 열면 목록 위에 작성 폼 모달(`/criteria/:id`)이 표시되고, 상태·의견·`ready` 근거를 입력해 저장하면 모달이 닫히고 `/`로 돌아간다 — 검증: Playwright E2E(실 API·DB, mock 없음) [제안 후 승인]
 - DoD-11: 저장에 성공하면 첫 화면(`/`)의 해당 기준 배지가 저장한 상태(`확인함` 또는 `추가 확인 필요`)로 표시된다 — 검증: Playwright E2E(실 API·DB) [사용자 결정]
-- DoD-12: 저장된 기준의 상세 모달에는 수정 버튼·입력 폼 등 수정 진입점이 없다 — 검증: Playwright E2E [사용자 결정]
-- DoD-13: 저장된 기준의 상세 모달에서 근거 자료를 선택하면 상세 모달 위에 근거 미리보기 모달이 열려 자료 제목·파일명·상태·작성일·본문이 읽기 전용으로 표시된다 — 검증: Playwright E2E(실 API·DB, `target:"dataroom"` 조회) [사용자 결정]
+- DoD-13: 작성 폼 모달에서 근거 자료의 미리보기를 열면 작성 폼 모달 위에 근거 미리보기 모달이 열려 자료 제목·파일명·상태·작성일·본문이 읽기 전용으로 표시된다 — 검증: Playwright E2E(실 API·DB, `target:"dataroom"` 조회) [제안 후 승인]
 - DoD-14: 기업 담당자가 Plugin을 열면 사용 불가 안내가 표시되고 `reviews.list`·`reviews.create`·`documents.*` 요청이 한 건도 나가지 않는다 — 검증: Playwright E2E(`page.on("request")`로 요청 수 확인) [사용자 결정]
 - DoD-15: 기업 담당자가 자료를 등록해도 투자자 화면의 모든 기준 배지는 `미작성`으로 유지된다 — 검증: Playwright E2E(실 API·DB) [사용자 결정]
 - DoD-16: 투자자가 검토를 저장한 뒤 다른 투자자로 로그인해 Plugin에 들어가면 이전 투자자의 검토·캐시·입력이 보이지 않는다 — 검증: Playwright E2E(`investor`→`peer` 전환) [제안 후 승인]
@@ -39,6 +38,7 @@
 - DoD-21: 작성 폼 모달에서 상태·의견·근거를 입력한 채 근거 미리보기 모달을 열었다 닫으면 선택한 상태·입력한 의견·선택한 근거가 그대로 유지된다 — 검증: Playwright E2E(실 API·DB) [사용자 결정]
 - DoD-22: 작성 폼 모달을 저장 없이 닫으면(X 버튼, 취소, Esc, 바깥 클릭) 모달이 닫혀 `/`로 돌아가고 입력은 폐기되어 같은 기준을 다시 열면 빈 폼이 표시된다 — 검증: Playwright E2E(실 API·DB, 닫기 방식별 확인) [사용자 결정]
 - DoD-23: 기업 담당자가 Plugin을 열면 사용 불가 안내 아래에 기준 3개가 번호·제목·검토 질문과 함께 읽기 전용으로 표시되고 상태 배지·작성 버튼·상세 버튼·모달은 없다 — 검증: Playwright E2E(실 API·DB) [사용자 결정]
+- DoD-24: 투자자가 검토를 저장해 모달이 닫히면 첫 화면(`/`)의 해당 기준 카드에 저장한 의견과 근거 자료 제목이 표시된다 — 검증: Playwright E2E(실 API·DB) [제안 후 승인]
 
 ## 4. 인터페이스 계약
 - API 경로: `POST /api/plugins/rpc`에 `pluginId: "review"`로 호출하고 method 분기로 `criteria.list`, `reviews.list`, `reviews.create`를 제공한다. 요청·응답·오류 형식은 기존 형식(`{ "workspaceId", "method", "params" }`, `{ "result" }`, `{ "kind", "message" }`)을 따른다. [제안 후 승인]
@@ -54,7 +54,7 @@
 - 오류 응답은 400 `invalid_input`(입력·근거 검증 실패), 401(미인증, 기존 extractor), 403 `forbidden`(기업 담당자의 `reviews.create` 또는 `workspaceId` 불일치), 404 `not_found`(존재하지 않는 기준), 409 `conflict`(같은 투자자·기준의 재저장), 500 `storage_error`(DB 오류)로 구분한다. 서버 `message`는 정적 문자열이다. [제안 후 승인]
 - 데이터 스키마: `api/migrations/0005_*.sql`로 `reviews`(투자자·기준 유니크, `status` CHECK `IN ('satisfied','needs_information')`, 기준은 `review_criteria.id` 참조)와 `review_evidence`(검토와 `documents.id` 연결, 같은 검토 안 자료 중복 불가) 테이블을 추가한다. 적용된 마이그레이션은 수정하지 않는다. [사용자 결정]
 - DTO는 `plugins/review/server/types.rs`에 ts-rs로 정의하고 TS 타입은 `make gen-ts-docker`로 생성한다. `api-client/`는 직접 수정하지 않는다. [제안 후 승인]
-- Plugin 화면 경로(Plugin 내부 경로)는 기준 목록 `/`와 기준 작성·상세 `/criteria/:id` 2종이다. `/criteria/:id`는 목록 위에 모달로 표시하고 새로고침하면 복원하며 닫으면 `/`로 돌아간다. 근거 자료 미리보기는 경로 없이 로컬 상태의 모달(작성 폼·상세 모달 위에 겹침)이며 제목·파일명·상태·작성일·본문을 읽기 전용으로 표시한다. 근거 자료 조회는 `host.call("documents.get", { documentId }, { target: "dataroom" })`로 하고 Plugin은 본체 화면 구조를 알지 못한다. [사용자 결정]
+- Plugin 화면 경로(Plugin 내부 경로)는 기준 목록 `/`와 기준 작성 `/criteria/:id` 2종이다(저장된 기준의 `/criteria/:id`는 `docs/specs/review-update.md`가 정한다). `/criteria/:id`는 목록 위에 모달로 표시하고 새로고침하면 복원하며 닫으면 `/`로 돌아간다. 근거 자료 미리보기는 경로 없이 로컬 상태의 모달(작성 폼 모달 위에 겹침)이며 제목·파일명·상태·작성일·본문을 읽기 전용으로 표시한다. 근거 자료 조회는 `host.call("documents.get", { documentId }, { target: "dataroom" })`로 하고 Plugin은 본체 화면 구조를 알지 못한다. [사용자 결정]
 
 ## 5. 엣지 케이스와 실패 시나리오
 

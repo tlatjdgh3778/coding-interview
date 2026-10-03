@@ -17,7 +17,7 @@ const ko = {
   documentError: "근거 자료를 불러오지 못했습니다.",
   documentNotFound: "근거 자료를 찾을 수 없습니다.",
   writeTitle: (title: string) => `${title} 검토 작성`,
-  detailTitle: (title: string) => `${title} 검토`,
+  editTitle: (title: string) => `${title} 검토 수정`,
   previewTitle: (title: string) => `${title} 미리보기`,
   previewOpen: (title: string) => `${title} 미리보기 열기`,
   statusDesc: {
@@ -32,8 +32,11 @@ const ko = {
   unwritten: "미작성",
   satisfied: "확인함",
   needsInformation: "추가 확인 필요",
-  write: "작성하기",
-  view: "상세 보기",
+  write: "검토 작성",
+  edit: "검토 수정",
+  lastModified: "최종 수정",
+  searchByTitle: "자료 제목으로 검색",
+  noMatchingDocuments: "일치하는 자료가 없습니다",
   question: "검토 질문",
   status: "상태",
   comment: "의견",
@@ -58,12 +61,8 @@ const ko = {
     409: "이미 저장한 검토입니다.",
     other: "검토를 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.",
   },
-  savedAt: "저장 시각",
-  evidenceList: "근거 자료 목록",
   fileName: "파일명",
   content: "본문",
-  documentTitlesError: "자료 제목을 불러오지 못해 자료 ID로 표시합니다.",
-  openDocument: (label: string) => `${label} 근거 자료 보기`,
 };
 
 type Widen<T> = T extends string
@@ -90,7 +89,7 @@ const en: Text = {
   documentError: "Could not load the evidence document.",
   documentNotFound: "The evidence document could not be found.",
   writeTitle: (title: string) => `${title} review`,
-  detailTitle: (title: string) => `${title} review details`,
+  editTitle: (title: string) => `${title} review edit`,
   previewTitle: (title: string) => `${title} preview`,
   previewOpen: (title: string) => `Open preview of ${title}`,
   statusDesc: {
@@ -106,7 +105,10 @@ const en: Text = {
   satisfied: "Confirmed",
   needsInformation: "Needs more information",
   write: "Write review",
-  view: "View details",
+  edit: "Edit review",
+  lastModified: "Last modified",
+  searchByTitle: "Search by document title",
+  noMatchingDocuments: "No matching documents",
   question: "Review question",
   status: "Status",
   comment: "Comment",
@@ -131,12 +133,8 @@ const en: Text = {
     409: "This review has already been saved.",
     other: "Could not save the review. Try again later.",
   },
-  savedAt: "Saved at",
-  evidenceList: "Evidence documents",
   fileName: "File name",
   content: "Content",
-  documentTitlesError: "Could not load document titles, so document IDs are shown.",
-  openDocument: (label: string) => `View evidence document ${label}`,
 };
 
 export function getText(context: PluginContext): Text {

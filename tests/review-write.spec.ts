@@ -7,8 +7,8 @@
 //
 // 검토는 삭제할 수 없으므로 저장 case는 재실행 전에 `make reset-db`가 필요하다(계획 T-6 데이터 격리, 확정).
 // 저장하는 (투자자, 기준) 슬롯은 desktop `business`, mobile `team`이고 `revenue`는 저장하지 않으며, 아무것도 저장하지 않는 `investor-peer`를 "모두 미작성" 확인에 쓴다(계획 T-6 데이터 격리, 확정).
-// DoD-12·13·16은 DoD-10·11 case 뒤에 실행된다는 순서 의존이 있다(`workers:1`, 파일 순서). DoD-21·22는 저장하지 않은 `revenue` 기준을 쓴다.
-// Plugin 경로는 `/`와 `/criteria/:id` 2종이고, 작성 폼·상세는 목록 위 모달이며 근거 미리보기는 경로 없는 중첩 모달이다.
+// DoD-16만 DoD-10·11 case 뒤에 실행된다는 순서 의존이 있다(`workers:1`, 파일 순서). DoD-13은 저장 슬롯이 필요 없다. DoD-21·22는 저장하지 않은 `revenue` 기준을 쓴다.
+// Plugin 경로는 `/`와 `/criteria/:id` 2종이고, 작성 폼은 목록 위 모달(저장된 기준의 수정은 review-update 스펙)이며 근거 미리보기는 경로 없는 중첩 모달이다.
 import { expect, test, type Page, type Request, type Route, type TestInfo } from "@playwright/test";
 import { COMPANY, INVESTOR, PASSWORD, login } from "./helpers/auth";
 
@@ -258,19 +258,20 @@ test.describe("검토 작성 — 투자자가 기준별 검토를 근거 자료�
 
   test.describe("투자자가 검토를 저장하고 다시 읽는 경우", () => {
     /**
-     * @spec DoD-10 DoD-11
+     * @spec DoD-10 DoD-11 DoD-24
      * @given 투자자가 미작성 기준을 열었고 목록 위에 작성 폼 모달(`/criteria/:id`)이 표시된다. 프로젝트별로 서로 다른 상태 하나씩(`satisfied`와 `needs_information`)을 저장하여 두 상태가 모두 검증된다
      * @when 상태·의견·`ready` 근거를 입력해 저장한다
-     * @then 같은 경로의 같은 모달이 저장된 내용의 읽기 전용 상세로 바뀐다
+     * @then 모달이 닫히고 `/`로 돌아간다
      * @then 첫 화면(/)의 해당 기준 배지가 저장한 상태(`확인함` 또는 `추가 확인 필요`)로 표시된다
+     * @then 첫 화면(/)의 해당 기준 카드에 저장한 의견과 근거 자료 제목이 표시된다
      */
-    test("[DoD-10][DoD-11] 저장하면 같은 모달이 읽기 전용 상세로 바뀌고 첫 화면 배지가 저장한 상태로 바뀐다", async ({
+    test("[DoD-10][DoD-11][DoD-24] 저장하면 모달이 닫히고 첫 화면 카드에 배지·의견·근거가 표시된다", async ({
       page,
     }, testInfo) => {
       const slot = slotOf(testInfo);
       await login(page, INVESTOR);
       await page.goto(PLUGIN);
-      await page.getByRole("button", { name: `${slot.title} 작성하기` }).click();
+      await page.getByRole("button", { name: `${slot.title} 검토 작성` }).click();
 
       // 목록 위에 작성 폼 모달이 열린다.
       await expect(page).toHaveURL(new RegExp(`${PLUGIN}/criteria/${slot.criterionId}$`));
@@ -280,83 +281,53 @@ test.describe("검토 작성 — 투자자가 기준별 검토를 근거 자료�
       await fillForm(page, slot.statusLabel, slot.comment, slot.docTitle);
       await saveButton(page).click();
 
-      // 같은 경로의 같은 모달이 저장된 내용의 읽기 전용 상세로 바뀐다.
-      const detailDialog = dialogNamed(page, `${slot.title} 검토`);
-      await expect(detailDialog).toBeVisible();
-      await expect(page).toHaveURL(new RegExp(`${PLUGIN}/criteria/${slot.criterionId}$`));
+      // 저장하면 모달이 닫히고 `/`로 돌아온다.
       await expect(formDialog).toHaveCount(0);
-      await expect(detailDialog.getByText(slot.comment)).toBeVisible();
-      await expect(detailDialog.getByText(slot.statusLabel, { exact: true })).toBeVisible();
-      await expect(
-        detailDialog.getByRole("button", { name: `${slot.docTitle} 근거 자료 보기` }),
-      ).toBeVisible();
-      await expect(detailDialog.getByRole("textbox")).toHaveCount(0);
-      await expect(detailDialog.getByRole("button", { name: "저장", exact: true })).toHaveCount(0);
-
-      // 모달을 닫으면 첫 화면의 해당 기준 배지가 저장한 상태로 바뀌어 있다.
-      await detailDialog.getByRole("button", { name: "닫기" }).click();
       await expect(page).toHaveURL(PLUGIN_LIST);
+
+      // 해당 기준 카드에 저장한 상태 배지·의견·근거 자료 제목이 표시된다.
       const card = criterionCard(page, slot.title);
       await expect(card.getByText(slot.statusLabel, { exact: true })).toBeVisible();
       await expect(card.getByText("미작성", { exact: true })).toHaveCount(0);
-      await expect(page.getByRole("button", { name: `${slot.title} 상세 보기` })).toBeVisible();
-    });
-
-    /**
-     * @spec DoD-12
-     * @given 투자자가 이미 검토를 저장한 기준이 있다(DoD-10·DoD-11 case가 저장한 검토를 사용한다. 같은 프로젝트의 같은 기준, 같은 투자자)
-     * @when 그 기준의 상세 모달을 연다
-     * @then 수정 버튼·입력 폼 등 수정 진입점이 없다
-     */
-    test("[DoD-12] 저장된 기준의 상세 모달에는 수정 진입점이 없다", async ({ page }, testInfo) => {
-      const slot = slotOf(testInfo);
-      await login(page, INVESTOR);
-      await page.goto(`${PLUGIN}/criteria/${slot.criterionId}`);
-
-      const detailDialog = dialogNamed(page, `${slot.title} 검토`);
-      await expect(detailDialog).toBeVisible();
-      await expect(detailDialog.getByText(slot.comment)).toBeVisible();
-      await expect(
-        detailDialog.getByRole("button", { name: /수정|편집|저장|작성|취소/ }),
-      ).toHaveCount(0);
-      await expect(detailDialog.getByRole("link", { name: /수정|편집/ })).toHaveCount(0);
-      await expect(detailDialog.getByRole("textbox")).toHaveCount(0);
-      await expect(detailDialog.getByRole("radio")).toHaveCount(0);
-      await expect(detailDialog.getByRole("checkbox")).toHaveCount(0);
-      await expect(detailDialog.locator("form")).toHaveCount(0);
+      await expect(card.getByText(slot.comment)).toBeVisible();
+      await expect(card.getByText(slot.docTitle, { exact: true })).toBeVisible();
+      await expect(page.getByRole("button", { name: `${slot.title} 검토 수정` })).toBeVisible();
+      await expect(page.getByRole("button", { name: `${slot.title} 검토 작성` })).toHaveCount(0);
     });
 
     /**
      * @spec DoD-13
-     * @given 투자자가 근거 자료를 붙여 검토를 저장한 기준이 있다(DoD-10·DoD-11 case가 저장한 검토를 사용한다. 같은 프로젝트의 같은 기준, 같은 투자자)
-     * @when 그 기준의 상세 모달에서 근거 자료를 선택한다
-     * @then 상세 모달 위에 근거 미리보기 모달이 열린다
+     * @given 투자자가 미작성 기준의 작성 폼 모달을 열었고 선택할 수 있는 근거 자료 목록이 보인다
+     * @when 근거 자료의 미리보기를 연다
+     * @then 작성 폼 모달 위에 근거 미리보기 모달이 열린다
      * @then 자료 제목·파일명·상태·작성일·본문이 읽기 전용으로 표시된다
      */
-    test("[DoD-13] 상세 모달에서 근거 자료를 선택하면 미리보기 모달에 제목·파일명·상태·작성일·본문이 읽기 전용으로 보인다", async ({
+    test("[DoD-13] 작성 폼 모달에서 근거 자료 미리보기를 열면 그 위에 미리보기 모달에 제목·파일명·상태·작성일·본문이 읽기 전용으로 보인다", async ({
       page,
-    }, testInfo) => {
-      const slot = slotOf(testInfo);
+    }) => {
+      // 저장하지 않는다. 시드 ready 자료 `doc-business`(회사 소개)를 쓴다.
+      const doc = SLOTS.desktop;
       await login(page, INVESTOR);
-      await page.goto(`${PLUGIN}/criteria/${slot.criterionId}`);
-      const detailDialog = dialogNamed(page, `${slot.title} 검토`);
-      await detailDialog.getByRole("button", { name: `${slot.docTitle} 근거 자료 보기` }).click();
+      await openForm(page, REVENUE.id);
+      const formDialog = dialogNamed(page, `${REVENUE.title} 검토 작성`);
+      await expect(evidenceBox(page, doc.docTitle)).toBeEnabled();
+      await formDialog.getByRole("button", { name: `${doc.docTitle} 미리보기 열기` }).click();
 
-      // 상세 모달 위에 미리보기 모달이 열리고 경로는 바뀌지 않는다.
-      const preview = dialogNamed(page, `${slot.docTitle} 미리보기`);
+      // 작성 폼 모달 위에 미리보기 모달이 열리고 경로는 바뀌지 않는다.
+      const preview = dialogNamed(page, `${doc.docTitle} 미리보기`);
       await expect(preview).toBeVisible();
-      await expect(page).toHaveURL(new RegExp(`${PLUGIN}/criteria/${slot.criterionId}$`));
-      await expect(detailDialog).toBeVisible();
+      await expect(page).toHaveURL(new RegExp(`${PLUGIN}/criteria/${REVENUE.id}$`));
+      await expect(formDialog).toBeVisible();
       const article = preview.getByRole("article");
-      await expect(article.locator("p").first()).toHaveText(slot.docTitle);
-      await expect(preview.getByText(slot.fileName, { exact: true })).toBeVisible();
+      await expect(article.locator("p").first()).toHaveText(doc.docTitle);
+      await expect(preview.getByText(doc.fileName, { exact: true })).toBeVisible();
       await expect(preview.getByText("준비 완료", { exact: true })).toBeVisible();
       await expect(preview.getByText("작성일", { exact: true })).toBeVisible();
       await expect(preview.locator("time")).toHaveAttribute(
         "datetime",
-        new RegExp(`^${slot.createdDate}`),
+        new RegExp(`^${doc.createdDate}`),
       );
-      await expect(preview.getByText(slot.content)).toBeVisible();
+      await expect(preview.getByText(doc.content)).toBeVisible();
       await expect(preview.getByRole("textbox")).toHaveCount(0);
 
       // 비목표: 다운로드·파일 크기·분류 태그는 없고 메타 항목은 파일명·상태·작성일뿐이다.
@@ -388,7 +359,7 @@ test.describe("검토 작성 — 투자자가 기준별 검토를 근거 자료�
       await expect(
         criterionCard(page, slot.title).getByText(slot.statusLabel, { exact: true }),
       ).toBeVisible();
-      await page.getByRole("button", { name: `${REVENUE.title} 작성하기` }).click();
+      await page.getByRole("button", { name: `${REVENUE.title} 검토 작성` }).click();
       await expect(commentBox(page)).toBeVisible();
       await statusRadio(page, "확인함").check();
       await commentBox(page).fill(leftover);
@@ -412,11 +383,11 @@ test.describe("검토 작성 — 투자자가 기준별 검토를 근거 자료�
       await expect(page.getByText("미작성", { exact: true })).toHaveCount(3);
       await expect(page.getByText("확인함", { exact: true })).toHaveCount(0);
       await expect(page.getByText("추가 확인 필요", { exact: true })).toHaveCount(0);
-      await expect(page.getByRole("button", { name: `${slot.title} 작성하기` })).toBeVisible();
-      await expect(page.getByRole("button", { name: `${slot.title} 상세 보기` })).toHaveCount(0);
+      await expect(page.getByRole("button", { name: `${slot.title} 검토 작성` })).toBeVisible();
+      await expect(page.getByRole("button", { name: `${slot.title} 검토 수정` })).toHaveCount(0);
 
       // 이전 투자자가 남긴 입력은 새 폼에 없고, 저장된 검토의 의견도 보이지 않는다.
-      await page.getByRole("button", { name: `${REVENUE.title} 작성하기` }).click();
+      await page.getByRole("button", { name: `${REVENUE.title} 검토 작성` }).click();
       await expect(commentBox(page)).toHaveValue("");
       await expect(page.getByRole("radio", { checked: true })).toHaveCount(0);
       await expect(page.getByText(leftover)).toHaveCount(0);
@@ -503,7 +474,7 @@ test.describe("검토 작성 — 투자자가 기준별 검토를 근거 자료�
           await expect(page).toHaveURL(PLUGIN_LIST);
 
           // 같은 기준을 다시 열면 빈 폼이다.
-          await page.getByRole("button", { name: `${REVENUE.title} 작성하기` }).click();
+          await page.getByRole("button", { name: `${REVENUE.title} 검토 작성` }).click();
           await expect(formDialog).toBeVisible();
           await expect(page).toHaveURL(new RegExp(`${PLUGIN}/criteria/${REVENUE.id}$`));
           await expect(page.getByRole("radio", { checked: true })).toHaveCount(0);
@@ -841,8 +812,8 @@ test.describe("검토 작성 — 투자자가 기준별 검토를 근거 자료�
       for (const badge of ["미작성", "확인함", "추가 확인 필요"]) {
         await expect(main.getByText(badge, { exact: true })).toHaveCount(0);
       }
-      await expect(main.getByText("작성하기")).toHaveCount(0);
-      await expect(main.getByText("상세 보기")).toHaveCount(0);
+      await expect(main.getByText("검토 작성")).toHaveCount(0);
+      await expect(main.getByText("검토 수정")).toHaveCount(0);
     });
 
     /**

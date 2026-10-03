@@ -11,7 +11,7 @@ use sqlx::PgPool;
 use std::collections::HashSet;
 use types::{
     CreateReviewRequest, CreateReviewResponse, ListCriteriaResponse, ListReviewsResponse,
-    ReviewHealthResponse,
+    ReviewHealthResponse, UpdateReviewRequest, UpdateReviewResponse,
 };
 
 pub const ID: &str = "review";
@@ -110,6 +110,43 @@ pub async fn dispatch(
             .await?;
             Ok(RpcResponse {
                 result: serde_json::to_value(CreateReviewResponse { review })
+                    .map_err(ApiError::storage)?,
+            })
+        }
+        "reviews.update" => {
+            if matches!(user.role, UserRole::Company) {
+                return Err(ApiError::forbidden());
+            }
+            let params: UpdateReviewRequest = serde_json::from_value(request.params)
+                .map_err(|_| ApiError::invalid("Invalid reviews.update params."))?;
+            let comment = params.comment.trim();
+            if comment.is_empty() || comment.chars().count() > MAX_COMMENT_CHARS {
+                return Err(ApiError::invalid("Invalid comment."));
+            }
+            if !models::criterion_exists(pool, &params.criterion_id).await? {
+                return Err(ApiError::not_found());
+            }
+            let ids = &params.evidence_document_ids;
+            let unique: HashSet<&String> = ids.iter().collect();
+            if ids.is_empty() || unique.len() != ids.len() {
+                return Err(ApiError::invalid("Invalid evidence documents."));
+            }
+            let ready = models::count_ready_documents(pool, &user.workspace_id, ids).await?;
+            if usize::try_from(ready).ok() != Some(ids.len()) {
+                return Err(ApiError::invalid("Invalid evidence documents."));
+            }
+            let review = models::update_review(
+                pool,
+                &user.workspace_id,
+                &user.id,
+                &params.criterion_id,
+                params.status,
+                comment,
+                ids,
+            )
+            .await?;
+            Ok(RpcResponse {
+                result: serde_json::to_value(UpdateReviewResponse { review })
                     .map_err(ApiError::storage)?,
             })
         }

@@ -73,10 +73,10 @@ export function CriteriaList({
                     <Button
                       variant="outline"
                       className="min-h-11"
-                      aria-label={`${criterion.title} ${review ? text.view : text.write}`}
+                      aria-label={`${criterion.title} ${review ? text.edit : text.write}`}
                       onClick={() => host.navigate(criterionPath(criterion.id))}
                     >
-                      {review ? text.view : text.write}
+                      {review ? text.edit : text.write}
                     </Button>
                   </CardContent>
                 </Card>
@@ -100,8 +100,13 @@ export function CriteriaList({
 }
 
 function SavedSummary({ host, context, review }: PluginProps & { review: Review }) {
+  const text = getText(context);
   const documents = useDocuments({ host, context });
   const titles = new Map((documents.data?.documents ?? []).map((doc) => [doc.id, doc.title]));
+  const updatedAt = new Intl.DateTimeFormat(context.locale, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(review.updatedAt));
   return (
     <div className="w-full space-y-2">
       <p className="line-clamp-2 whitespace-pre-wrap break-words text-muted-foreground">
@@ -117,6 +122,9 @@ function SavedSummary({ host, context, review }: PluginProps & { review: Review 
           </li>
         ))}
       </ul>
+      <p className="text-caption text-muted-foreground">
+        {text.lastModified}: <time dateTime={review.updatedAt}>{updatedAt}</time>
+      </p>
     </div>
   );
 }

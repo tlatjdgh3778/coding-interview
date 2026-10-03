@@ -187,3 +187,56 @@ pub async fn create_review(
     ids.sort();
     into_review(row, ids)
 }
+
+/// 검토 갱신과 근거 교체를 한 트랜잭션으로 처리한다. 저장된 검토가 없으면 404.
+/// 첫 문장이 행 잠금을 잡아 같은 검토의 동시 수정을 직렬화한다.
+pub async fn update_review(
+    pool: &PgPool,
+    workspace_id: &str,
+    investor_id: &str,
+    criterion_id: &str,
+    status: ReviewStatus,
+    comment: &str,
+    evidence_document_ids: &[String],
+) -> Result<Review, ApiError> {
+    let mut tx = pool.begin().await.map_err(ApiError::storage)?;
+    let sql = format!(
+        "UPDATE reviews SET status = $4, comment = $5, updated_at = clock_timestamp() \
+         WHERE workspace_id = $1 AND investor_id = $2 AND criterion_id = $3 \
+         RETURNING id, criterion_id, status, comment, \
+                   to_char(created_at AT TIME ZONE 'UTC', {TS_FORMAT}) AS created_at, \
+                   to_char(updated_at AT TIME ZONE 'UTC', {TS_FORMAT}) AS updated_at"
+    );
+    let row = sqlx::query_as::<_, ReviewRow>(&sql)
+        .bind(workspace_id)
+        .bind(investor_id)
+        .bind(criterion_id)
+        .bind(status_str(status))
+        .bind(comment)
+        .fetch_optional(&mut *tx)
+        .await
+        .map_err(ApiError::storage)?
+        .ok_or_else(ApiError::not_found)?;
+
+    sqlx::query("DELETE FROM review_evidence WHERE review_id = $1")
+        .bind(&row.id)
+        .execute(&mut *tx)
+        .await
+        .map_err(ApiError::storage)?;
+
+    sqlx::query(
+        "INSERT INTO review_evidence (review_id, document_id) \
+         SELECT $1, UNNEST($2::text[])",
+    )
+    .bind(&row.id)
+    .bind(evidence_document_ids)
+    .execute(&mut *tx)
+    .await
+    .map_err(ApiError::storage)?;
+
+    tx.commit().await.map_err(ApiError::storage)?;
+
+    let mut ids = evidence_document_ids.to_vec();
+    ids.sort();
+    into_review(row, ids)
+}

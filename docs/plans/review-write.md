@@ -19,7 +19,7 @@
 - 문구는 기존 Plugin처럼 `context.locale`로 ko/en 인라인 객체를 쓴다. ui-kit은 `@biyard/components`로 가져오며 Plugin에서 쓴 선례가 없어 `pnpm build:plugins`로 자기완결 검사를 처음 확인한다. 타입은 `@interview/api-types/*`를 `import type`으로만 가져온다. 근거: `plugins/review/ui/app.tsx`, `scripts/build-plugins.mjs`, `plugins/review/ui/styles.css`.
 - 기업 사용자 분기는 `App` 최상단에서 `role`로 가르고, 기업 경로에서는 사용 불가 안내와 `criteria.list`로 조회한 읽기 전용 기준 목록 컴포넌트만 마운트한다. `reviews.list`·`reviews.create`·`documents.*` 조회·저장 훅은 투자자 전용 컴포넌트 안에서만 호출해 기업 경로에서 요청이 생기지 않게 한다. 근거: `plugin-sdk/index.ts`의 `PluginContext`, `CLAUDE.md`.
 - 근거 선택 목록과 근거 미리보기 모달은 `host.call("documents.list" | "documents.get", ..., { target: "dataroom" })`로 조회한다. 근거: `web/src/plugins/host-call.ts`, `api/src/dataroom/mod.rs`.
-- 작성 폼·상세·근거 미리보기 모달은 네이티브 dialog 요소와 `showModal()`로 만든다(`@biyard/components`에 dialog가 없고 자료 등록 화면도 같은 방식이다). 근거 미리보기는 경로 없이 로컬 상태의 중첩 모달이라 아래 모달의 입력 상태를 유지한다. 근거: `web/src/dataroom/document-register.tsx`.
+- 작성 폼·근거 미리보기 모달은 네이티브 dialog 요소와 `showModal()`로 만든다(`@biyard/components`에 dialog가 없고 자료 등록 화면도 같은 방식이다). 근거 미리보기는 경로 없이 로컬 상태의 중첩 모달이라 아래 모달의 입력 상태를 유지한다. 근거: `web/src/dataroom/document-register.tsx`.
 - Rust 통합 테스트는 `#[sqlx::test]`로 `dataroom_api::plugins::dispatch`를 `pluginId: "review"`로 직접 호출해 라우팅까지 통과시킨다. 기존 `api/tests/common/mod.rs`는 수정하지 않고 새 헬퍼 모듈을 둔다. 근거: `api/tests/common/mod.rs`, `api/src/lib.rs`, `api/src/plugins/mod.rs`.
 - E2E는 `tests/`의 Playwright(desktop, mobile)로 실제 서버·DB를 쓰고 `login(page, email)` 헬퍼를 재사용한다. `peer` 이메일은 새 spec 안의 로컬 상수로 두어 `tests/helpers/auth.ts`를 수정하지 않는다. 근거: `tests/helpers/auth.ts`, `playwright.config.ts`.
 
@@ -84,9 +84,9 @@
 
 - 사이드: 프론트
 - 상태: 완료
-- 목적: 기준 목록과 작성 폼 모달·읽기 전용 상세 모달·근거 선택·근거 미리보기 모달, 기업 사용자 안내를 구현한다.
+- 목적: 기준 목록과 작성 폼 모달·근거 선택·근거 미리보기 모달, 기업 사용자 안내를 구현한다.
 - 선행: T-3
-- 연결 항목: DoD-2, DoD-10, DoD-11, DoD-12, DoD-13, DoD-14, DoD-15, DoD-16, DoD-21, DoD-22, DoD-23, EC-14, EC-15, EC-16, EC-17, EC-18, EC-19, EC-20, EC-21, EC-25, EC-26, EC-27, EC-28
+- 연결 항목: DoD-2, DoD-10, DoD-11, DoD-13, DoD-14, DoD-15, DoD-16, DoD-21, DoD-22, DoD-23, DoD-24, EC-14, EC-15, EC-16, EC-17, EC-18, EC-19, EC-20, EC-21, EC-25, EC-26, EC-27, EC-28
 - 수정 대상: `plugins/review/ui/app.tsx` — 역할 분기와 경로 분기. `plugins/review/ui/route.ts`, `text.ts`, `hooks.ts`, `common.tsx`, `criteria-list.tsx`, `criterion-page.tsx`, `evidence-picker.tsx` — 기존 화면 모듈을 모달 전환에 맞게 수정. `plugins/review/ui/modal.tsx`(신규) — 공용 모달. `plugins/review/ui/document-view.tsx` — 경로 화면에서 근거 미리보기 모달로 변경
 - 따라야 할 패턴: `createReactPlugin`, `host.call`, `scopedKey` 쿼리 키, 로딩 `role="status"`·오류 `role="alert"` — 근거: `plugins/review/ui/app.tsx`, `plugin-sdk/react.tsx`. 입력 보존·고정 문구·`disabled={isPending}`·재시도 — 근거: `web/src/dataroom/document-register.tsx`, `web/src/dataroom/document-list.tsx`(Plugin은 본체 모듈을 가져오지 않고 패턴만 따른다)
 - 완료 조건: 연결 항목 충족. 오류는 상태 코드로 분기하고 서버 `message`를 렌더하지 않는다. 조회 실패를 미작성·자료 없음으로 표시하지 않는다. 기업 사용자 경로에서는 `criteria.list` 외의 조회·저장 훅이 호출되지 않는다. 작은 화면·폼 레이블·키보드 접근을 지원하고 새 의존성을 추가하지 않으며 번들이 자기완결이다. 모달은 접근 가능한 이름과 포커스 이동·복귀를 지원하고 X·취소·Esc·바깥 클릭이 같은 닫기 동작(입력 폐기)이다. 근거 미리보기 모달은 아래 모달의 입력 상태를 건드리지 않는다 — 검증: T-6의 E2E, `pnpm build:plugins`
@@ -97,9 +97,9 @@
 
 - 사이드: E2E
 - 상태: 완료
-- 목적: desktop·mobile에서 작성·읽기 전용 상세·근거 화면·역할별 분기·실패와 빈 상태를 검증한다.
+- 목적: desktop·mobile에서 작성·근거 화면·역할별 분기·실패와 빈 상태를 검증한다.
 - 선행: T-5
-- 연결 항목: DoD-2, DoD-10, DoD-11, DoD-12, DoD-13, DoD-14, DoD-15, DoD-16, DoD-21, DoD-22, DoD-23, EC-14, EC-15, EC-16, EC-17, EC-18, EC-19, EC-20, EC-21, EC-25, EC-26, EC-27, EC-28
+- 연결 항목: DoD-2, DoD-10, DoD-11, DoD-13, DoD-14, DoD-15, DoD-16, DoD-21, DoD-22, DoD-23, DoD-24, EC-14, EC-15, EC-16, EC-17, EC-18, EC-19, EC-20, EC-21, EC-25, EC-26, EC-27, EC-28
 - 수정 대상: `tests/review-write.spec.ts`(신규)
 - 따라야 할 패턴: role·label·보이는 문구로 요소를 찾고 sleep 대신 자동 대기를 쓴다 — 근거: `.claude/agents/e2e-dev.md`. 로그인은 `login(page, email, password)` 헬퍼, 요청 수는 `page.on("request")`, 오류 유발은 method별 `page.route` — 근거: `tests/helpers/auth.ts`, `tests/document-register.spec.ts`
 - 완료 조건: 연결 항목 각각을 단언하는 시나리오가 desktop·mobile 두 프로젝트에서 통과한다. 기존 `tests/documents.spec.ts`·`tests/document-register.spec.ts`가 계속 통과한다 — 검증: `make test-e2e`
@@ -123,7 +123,6 @@
 - DoD-9: T-2, T-4
 - DoD-10: T-5, T-6
 - DoD-11: T-5, T-6
-- DoD-12: T-5, T-6
 - DoD-13: T-5, T-6
 - DoD-14: T-5, T-6
 - DoD-15: T-5, T-6
@@ -135,6 +134,7 @@
 - DoD-21: T-5, T-6
 - DoD-22: T-5, T-6
 - DoD-23: T-5, T-6
+- DoD-24: T-5, T-6
 - EC-1: T-2, T-4
 - EC-2: T-2, T-4
 - EC-3: T-2, T-4
@@ -181,13 +181,13 @@
 
 ## 테스트 설계 증거
 
-- 상태: PASS (골격 재동결, 2026-10-03, update 2회). 모달 전환 후 기업 화면에 읽기 전용 기준 목록을 보이도록 스펙이 다시 바뀌어 이전 증거(digest `57137ab17381c6bb`)는 폐기했다.
+- 상태: PASS (골격 재동결, 2026-10-03, update 3회). 검토 수정 기능(`docs/specs/review-update.md`)을 별도 스펙으로 분리하면서 이 스펙이 바뀌어 이전 증거(digest `6355f26c3fc6d204`)는 폐기했다.
 - 기준 스펙: docs/specs/review-write.md (확정, DoD-1~23·EC-1~29)
-- 골자 digest: `6355f26c3fc6d204` (case 49개: Rust 28, E2E 21). 폐기한 digest: `57137ab17381c6bb`(기업 화면 변경 전), `5ae18627a59e61af`(모달 전환 전), 그 이전의 `92b8b0e345afbde2`, `2ac15ca1e7f1a348`, `309452727d40f910`.
-- 갱신 사유: (1) 2026-10-03 사용자 결정으로 작성 폼·상세·근거 미리보기를 모달로 바꿨다(경로 `/`와 `/criteria/:id` 2종, `/documents/:id` 삭제, DoD-10·12·13·EC-15·27·28 수정, DoD-21·22 신설). (2) 같은 날 사용자 결정으로 기업 담당자 화면이 사용 불가 안내와 `criteria.list`로 조회한 읽기 전용 기준 목록을 보이게 했다(README 권한 표의 기준 조회 권한과 일치, DoD-14·EC-28 수정, DoD-23 신설, §4 한 줄 추가).
-- 골격 파일: `api/tests/review_write.rs`(28개, 무변경, 본문 채워짐), `tests/review-write.spec.ts`(21개). E2E 21개 중 `test.fixme` 골격은 3개(DoD-14, DoD-23, EC-28)이고 본문이 채워진 case는 18개(DoD-2, 10·11, 12, 13, 15, 16, 21, 22, EC-14, 15, 16, 17, 18, 19·20, 21, 25, 26, 27)다. 동결 대상은 골자(태그·case 서술)이며 채워진 본문은 변경된 화면에 맞게 구현 단계에서 다시 확인한다.
-- 기계 검사: `check-skeleton.py`의 비-frozen 실행은 본문이 채워진 case 때문에 위반 212건(미구현 표기 없음 46건, assertion 166건)을 낸다. 이 두 유형 외의 위반(`@spec` ID 오류, 항목-case 연결 누락, 태그 누락)은 0건이며 스펙 항목 52개(DoD 23개, EC 29개) 중 DoD-17만 제외이고 나머지 51개가 case에 연결된다. 골자 digest는 `--frozen`으로 읽는다.
-- reviewer: 새 `general-purpose` update 2회의 1라운드. 상태 PASS(사람 확정 대기 항목을 제외한 finding 0건, TD-01~08 충족). 직전 update(모달 전환)의 reviewer는 NEEDS-FIX였고 골격 finding은 0건, 증거 섹션 불일치 1건을 기록 갱신으로 해소했다. 최초 사이클은 4라운드였다(사용자 승인으로 한도 초과). 모든 라운드에서 reviewer가 파일을 수정하지 않았음을 `git status`로 확인했다.
+- 골자 digest: `f97a803b711c571e` (case 48개: Rust 28, E2E 20). 폐기한 digest: `6355f26c3fc6d204`(수정 기능 분리 전), `57137ab17381c6bb`(기업 화면 변경 전), `5ae18627a59e61af`(모달 전환 전), 그 이전의 `92b8b0e345afbde2`, `2ac15ca1e7f1a348`, `309452727d40f910`.
+- 갱신 사유: (1) 2026-10-03 사용자 결정으로 작성 폼·상세·근거 미리보기를 모달로 바꿨다(경로 `/`와 `/criteria/:id` 2종, `/documents/:id` 삭제, DoD-10·12·13·EC-15·27·28 수정, DoD-21·22 신설). (2) 같은 날 사용자 결정으로 기업 담당자 화면이 사용 불가 안내와 `criteria.list`로 조회한 읽기 전용 기준 목록을 보이게 했다(README 권한 표의 기준 조회 권한과 일치, DoD-14·EC-28 수정, DoD-23 신설, §4 한 줄 추가). (3) 2026-10-03 검토 수정 기능을 `review-update.md`로 분리했다: §2 재수정 제외를 이관 문구로 바꾸고, DoD-10을 저장 후 모달 닫힘으로 바꾸고, DoD-12(상세에 수정 진입점 없음)를 삭제하고, DoD-13을 작성 폼 모달에서의 근거 미리보기로 바꾸고, DoD-24(저장 후 카드에 의견·근거 자료 제목 표시)를 신설했다. DoD-24는 새 스펙의 DoD-13 제외를 이 스펙의 case가 실제로 강제하게 하려는 것이다.
+- 골격 파일: `api/tests/review_write.rs`(28개, 무변경, 본문 채워짐), `tests/review-write.spec.ts`(20개). E2E 20개 중 `test.fixme` 골격은 2개(`[DoD-10][DoD-11][DoD-24]`, `[DoD-13]`)이고 나머지 18개는 본문이 채워져 있다. 동결 대상은 골자(태그·case 서술)이며 채워진 본문은 변경된 화면에 맞게 구현 단계(T-6)에서 다시 확인한다.
+- 기계 검사: `check-skeleton.py --spec docs/specs/review-write.md --files api/tests/review_write.rs tests/review-write.spec.ts --exempt DoD-17`의 비-frozen 실행은 본문이 채워진 case 때문에 "미구현 표기 없음"과 "assertion" 위반을 낸다. 이 두 유형 외의 위반(`@spec` ID 오류, 항목-case 연결 누락, 태그 누락)은 0건이고 DoD-17만 제외다. 골자 digest는 `--frozen`으로 읽는다.
+- reviewer: 새 `general-purpose` update 3라운드. 1라운드·2라운드는 골격 finding 없이 계획 문서 문구(삭제된 DoD-12 연결, "상세" 잔존) 지적으로 NEEDS-FIX였고 고쳤다. DoD-24 신설 후 3라운드는 PASS(TD-01~08 충족, finding 0건; 선택 관찰로 계획의 mock 경계 문장의 범위 표기 정리가 있었다). 모든 라운드에서 reviewer가 파일을 수정하지 않았음을 `git status`로 확인했다.
 - 사람 확정:
   - 스펙 변경(2026-10-03): 모달 경로는 `/criteria/:id` 유지(새로고침 시 복원, 닫으면 `/`), 근거 미리보기는 경로 없는 로컬 상태 모달, 미리보기 표시 항목은 제목·파일명·상태·작성일·본문만(크기·분류 태그·다운로드 제외), 작성 폼 모달을 저장 없이 닫으면 입력 폐기.
   - mock 경계: E2E에서 `page.route`로 응답을 흉내 내는 case는 EC-14, EC-15(전부), EC-16, EC-19, EC-20, EC-21, EC-25, EC-26이다. EC-15는 실서버 표본이 없어 전부 mock임을 2026-10-03에 사용자가 확정했다. 나머지(DoD-2, DoD-10~16, DoD-21·22, EC-17, EC-18, EC-27, EC-28)는 실제 API·DB를 쓴다. Rust 통합 테스트는 mock이 없다(실제 PostgreSQL).
@@ -196,6 +196,7 @@
   - EC-13 유발 방식: 임시 DB의 `review_evidence`에 항상 실패하는 CHECK 제약을 추가해 검토 INSERT는 성공하고 근거 INSERT만 실패시킨다. 골격의 `@given`은 결과 언어이며 주입 방식은 헤더 주석에 있다.
   - E2E 데이터 격리: 검토는 삭제할 수 없고 Playwright 컨테이너에는 DB 접속이 없다. 저장 슬롯은 desktop `business`·mobile `team`이고 `revenue`는 저장하지 않으며(실패·지연 mock과 DoD-21·22가 `revenue`의 작성 폼을 쓴다), 모두 미작성 확인(DoD-2, DoD-15)에는 아무것도 저장하지 않는 `investor-peer`를 쓴다. 저장 case는 재실행 전에 `make reset-db`가 필요하며 제출 문서에 한계로 기록한다.
   - 표본 유지: EC-1의 `Satisfied`(대소문자) 표본과 EC-2의 허용 case는 스펙 범위 안이다.
+  - 수정 기능 분리(2026-10-03): 저장한 검토의 수정은 `docs/specs/review-update.md`가 다룬다. 새 스펙의 DoD-13(최초 작성 저장 후 모달 닫힘·카드 반영)은 이 스펙의 `[DoD-10][DoD-11][DoD-24]` case가 맡는 것으로 사용자가 확정했다. 이 case의 본문은 카드에 저장한 의견과 근거 자료 제목 표시까지 확인한다.
 - 미검증·검증 불가:
   - mock case(EC-14, EC-15, EC-16, EC-19, EC-20, EC-21, EC-25, EC-26)는 실제 서버가 그 상태 코드·응답 형식을 내는지 증명하지 못한다. 특히 EC-15는 실제 `documents.get`의 404가 미리보기 모달의 오류 안내로 이어지는 경로가 미검증이고, EC-20의 400·403·404·409·500 문구는 전부 mock이다. 서버 쪽은 Rust 통합 테스트가 맡는다.
   - Rust 통합 테스트는 `dataroom_api::plugins::dispatch`를 직접 호출하므로 HTTP 라우팅, `CurrentUser` extractor, 401은 검증하지 않는다.
@@ -207,7 +208,7 @@
   - 두 골격 파일 헤더의 "사용자 확정 전" 문구를 "확정"으로 고친다(골자가 아닌 주석이다). E2E 헤더에는 EC-15 전부 mock과 모달 구조(경로 2종)도 반영한다.
   - 본문이 채워진 E2E 18개 case 중 기업 담당자를 쓰는 case와 모달 구조에 기대는 case의 요소 이름·URL 가정을 다시 확인하고 본문 결함만 고친다(골자는 바꾸지 않는다). DoD-14·EC-28은 `reviews.list`·`reviews.create`·`documents.*` 요청 0건이며 `criteria.list`는 허용한다. DoD-23은 기준 3개의 번호·제목·검토 질문과 배지·버튼·모달 부재를 단언한다.
   - DoD-16 본문은 `page.goto` 없이 화면 조작(로그아웃 → 로그인 화면 → `peer` 로그인)으로 전환한다. 전체 새로고침이 있으면 캐시 누수 검증이 무효가 된다.
-  - DoD-12·13·16은 DoD-10·11 case가 저장한 검토에 의존한다. DoD-21·22는 저장하지 않은 `revenue` 기준의 작성 폼을 쓰며 같은 (투자자, 기준)에 다시 저장하지 않는다(재저장은 409). DoD-22의 닫기 표본은 X 버튼, 취소, Esc, 바깥 클릭이며 각각 새 폼을 열어 시험한다.
+  - DoD-16은 DoD-10·11 case가 저장한 검토에 의존한다(DoD-13은 저장 슬롯이 필요 없다). DoD-21·22는 저장하지 않은 `revenue` 기준의 작성 폼을 쓰며 같은 (투자자, 기준)에 다시 저장하지 않는다(재저장은 409). DoD-22의 닫기 표본은 X 버튼, 취소, Esc, 바깥 클릭이며 각각 새 폼을 열어 시험한다.
   - DoD-8은 잘못된 입력 표본에 존재하지 않는 `criterionId`와 존재하지 않는 자료 ID를 함께 넣은 요청을 포함한다. EC-24의 잘못된 근거 표본은 존재하지 않는 자료 ID, 빈 배열, 중복 ID, `processing` 자료, 다른 workspace 자료다. EC-11은 (투자자, 기준) 조합 6개가 반복 상한이다.
   - `PEER` 이메일은 `tests/review-write.spec.ts` 안의 로컬 상수로 둔다(`tests/helpers/auth.ts`는 수정하지 않는다). 기존 `api/tests/common/mod.rs`, `dataroom_*.rs`, `tests/documents.spec.ts`, `tests/document-register.spec.ts`도 수정하지 않는다.
   - `tests/`는 `pnpm lint` 대상 여부와 긴 `test.fixme` 줄의 prettier 통과를 `make check-docker`로 확인한다.
