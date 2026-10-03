@@ -102,3 +102,28 @@ pub struct CreateReviewRequest {
 pub struct CreateReviewResponse {
     pub review: Review,
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(
+    feature = "ts-bridge",
+    derive(ts_rs::TS),
+    ts(export, export_to = "types/")
+)]
+pub struct UpdateReviewRequest {
+    pub criterion_id: String,
+    pub status: ReviewStatus,
+    pub comment: String,
+    pub evidence_document_ids: Vec<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(
+    feature = "ts-bridge",
+    derive(ts_rs::TS),
+    ts(export, export_to = "types/")
+)]
+pub struct UpdateReviewResponse {
+    pub review: Review,
+}
