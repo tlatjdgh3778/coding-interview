@@ -25,8 +25,8 @@ DB 초기화 : make reset-db
 
 ## 지침 (판단이 필요한 것)
 
-- 구조: 자료 관리는 본체(`web/`, `api/src/dataroom/`), 검토는 Review Plugin(`plugins/review/{ui,server}`). 서버 호출은 `host.call`로만 하고 Plugin이 본체 화면 구조를 알게 만들지 않는다. Plugin `navigate`는 Plugin 내부 경로만 가능하므로 근거 자료는 Plugin 안의 읽기 전용 화면 + `target: "dataroom"` 조회로 보여준다(사용자 확인 대기 중).
-- 기업 사용자: 검토 조회는 빈 목록, 현황·저장은 403. 화면은 사용 불가 안내만 띄우고 검토 API는 호출하지 않는다.
+- 구조: 자료 관리는 본체(`web/`, `api/src/dataroom/`), 검토는 Review Plugin(`plugins/review/{ui,server}`). 서버 호출은 `host.call`로만 하고 Plugin이 본체 화면 구조를 알게 만들지 않는다. Plugin `navigate`는 Plugin 내부 경로만 가능하므로 근거 자료는 Plugin 안의 근거 미리보기 모달(경로 없음, 작성 폼·상세 모달 위에 겹침) + `target: "dataroom"` 조회로 보여준다(사용자 확정).
+- 기업 사용자: 검토 조회는 빈 목록, 현황·저장은 403. 화면은 사용 불가 안내와 읽기 전용 검토 기준 목록(`criteria.list`)만 띄우고 `criteria.list` 외의 검토·자료 API는 호출하지 않는다.
 - 현황: `추가 확인 필요`도 작성으로 센다. 작성 수/미작성 수와 별도로 확인함 수를 집계한다. 회사 합의·승인 상태가 아니다.
 - 수정 이력은 두지 않는다(최신 내용 + 수정 시각). 동시 저장은 last-write-wins.
 - 구현 순서: 자료 조회 → 등록 → 기준 조회 → 검토 작성 → 조회 → 수정 → 현황. 기능마다 테스트를 함께 작성한다.
