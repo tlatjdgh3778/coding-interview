@@ -1,0 +1,144 @@
+import type { PluginContext } from "@interview/plugin-sdk";
+
+const ko = {
+  title: "투자 검토",
+  companyUnavailable: "검토 기능은 투자자만 사용할 수 있습니다.",
+  loading: "불러오고 있습니다.",
+  retry: "재시도",
+  back: "기준 목록으로",
+  close: "닫기",
+  criteriaHeading: "검토 기준",
+  cancel: "취소",
+  notFoundTitle: "찾을 수 없음",
+  notFoundBody: "요청한 화면이나 기준을 찾을 수 없습니다.",
+  criteriaError: "검토 기준을 불러오지 못했습니다.",
+  reviewsError: "저장한 검토를 불러오지 못했습니다.",
+  documentsError: "자료 목록을 불러오지 못했습니다.",
+  documentError: "근거 자료를 불러오지 못했습니다.",
+  documentNotFound: "근거 자료를 찾을 수 없습니다.",
+  writeTitle: (title: string) => `${title} 검토 작성`,
+  detailTitle: (title: string) => `${title} 검토`,
+  previewTitle: (title: string) => `${title} 미리보기`,
+  previewOpen: (title: string) => `${title} 미리보기 열기`,
+  statusDesc: {
+    satisfied: "제출된 자료로 이 기준을 확인했습니다.",
+    needs_information: "이 기준은 자료가 더 필요합니다.",
+  },
+  private: "나에게만 공개됩니다.",
+  atLeastOne: "1개 이상",
+  selectedCount: (n: number) => `${n}개 선택`,
+  docStatus: { ready: "준비 완료", processing: "처리 중", failed: "처리 실패" },
+  createdAt: "작성일",
+  unwritten: "미작성",
+  satisfied: "확인함",
+  needsInformation: "추가 확인 필요",
+  write: "작성하기",
+  view: "상세 보기",
+  question: "검토 질문",
+  status: "상태",
+  comment: "의견",
+  commentCount: (n: number) => `${n.toLocaleString("en-US")} / 2,000`,
+  evidence: "근거 자료",
+  evidenceHint: "이 데이터룸의 준비 완료 자료만 근거로 선택할 수 있습니다.",
+  noReadyDocuments: "선택할 수 있는 준비 완료 자료가 없습니다.",
+  notSelectable: (status: string) =>
+    status === "processing"
+      ? "처리 중인 자료라 선택할 수 없습니다."
+      : "처리에 실패한 자료라 선택할 수 없습니다.",
+  statusRequired: "상태를 선택해 주세요.",
+  commentRequired: "의견을 입력해 주세요.",
+  commentTooLong: "의견은 2000자 이하로 입력해 주세요.",
+  evidenceRequired: "근거 자료를 1개 이상 선택해 주세요.",
+  save: "저장",
+  saving: "저장하고 있습니다.",
+  saveErrors: {
+    400: "입력 내용이 올바르지 않습니다. 상태, 의견, 근거 자료를 확인해 주세요.",
+    403: "검토를 저장할 권한이 없습니다.",
+    404: "검토 기준을 찾을 수 없습니다.",
+    409: "이미 저장한 검토입니다.",
+    other: "검토를 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+  },
+  savedAt: "저장 시각",
+  evidenceList: "근거 자료 목록",
+  fileName: "파일명",
+  content: "본문",
+  documentTitlesError: "자료 제목을 불러오지 못해 자료 ID로 표시합니다.",
+  openDocument: (label: string) => `${label} 근거 자료 보기`,
+};
+
+type Widen<T> = T extends string
+  ? string
+  : T extends (...args: infer A) => string
+    ? (...args: A) => string
+    : { [K in keyof T]: Widen<T[K]> };
+export type Text = Widen<typeof ko>;
+
+const en: Text = {
+  title: "Investment review",
+  companyUnavailable: "Reviews are available to investors only.",
+  loading: "Loading.",
+  retry: "Retry",
+  back: "Back to criteria",
+  close: "Close",
+  criteriaHeading: "Review criteria",
+  cancel: "Cancel",
+  notFoundTitle: "Not found",
+  notFoundBody: "The screen or criterion you requested could not be found.",
+  criteriaError: "Could not load the review criteria.",
+  reviewsError: "Could not load your saved reviews.",
+  documentsError: "Could not load the documents.",
+  documentError: "Could not load the evidence document.",
+  documentNotFound: "The evidence document could not be found.",
+  writeTitle: (title: string) => `${title} review`,
+  detailTitle: (title: string) => `${title} review details`,
+  previewTitle: (title: string) => `${title} preview`,
+  previewOpen: (title: string) => `Open preview of ${title}`,
+  statusDesc: {
+    satisfied: "I confirmed this criterion with the submitted documents.",
+    needs_information: "This criterion needs more documents.",
+  },
+  private: "Only visible to you.",
+  atLeastOne: "At least 1",
+  selectedCount: (n: number) => `${n} selected`,
+  docStatus: { ready: "Ready", processing: "Processing", failed: "Failed" },
+  createdAt: "Created",
+  unwritten: "Not written",
+  satisfied: "Confirmed",
+  needsInformation: "Needs more information",
+  write: "Write review",
+  view: "View details",
+  question: "Review question",
+  status: "Status",
+  comment: "Comment",
+  commentCount: (n: number) => `${n.toLocaleString("en-US")} / 2,000`,
+  evidence: "Evidence documents",
+  evidenceHint: "Only ready documents in this data room can be selected as evidence.",
+  noReadyDocuments: "There are no ready documents to select.",
+  notSelectable: (status: string) =>
+    status === "processing"
+      ? "This document is still processing and cannot be selected."
+      : "This document failed processing and cannot be selected.",
+  statusRequired: "Select a status.",
+  commentRequired: "Enter a comment.",
+  commentTooLong: "Keep the comment within 2000 characters.",
+  evidenceRequired: "Select at least one evidence document.",
+  save: "Save",
+  saving: "Saving.",
+  saveErrors: {
+    400: "The input is invalid. Check the status, comment, and evidence.",
+    403: "You do not have permission to save this review.",
+    404: "The review criterion could not be found.",
+    409: "This review has already been saved.",
+    other: "Could not save the review. Try again later.",
+  },
+  savedAt: "Saved at",
+  evidenceList: "Evidence documents",
+  fileName: "File name",
+  content: "Content",
+  documentTitlesError: "Could not load document titles, so document IDs are shown.",
+  openDocument: (label: string) => `View evidence document ${label}`,
+};
+
+export function getText(context: PluginContext): Text {
+  return context.locale === "ko" ? ko : en;
+}

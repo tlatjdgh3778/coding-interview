@@ -1,38 +1,36 @@
-import { useQuery } from "@tanstack/react-query";
-import { scopedKey } from "@interview/plugin-sdk";
 import type { PluginProps } from "@interview/plugin-sdk/react";
-import type { ReviewHealthResponse } from "@interview/api-types/ReviewHealthResponse";
+import { NotFound } from "./common";
+import { CompanyCriteria } from "./company-criteria";
+import { CriteriaList } from "./criteria-list";
+import { parseRoute } from "./route";
+import { getText } from "./text";
 
 export const App: React.FC<PluginProps> = ({ host, context }) => {
-  const text =
-    context.locale === "ko"
-      ? {
-          title: "Review Plugin",
-          loading: "연결을 확인하고 있습니다.",
-          error: "Plugin API에 연결하지 못했습니다.",
-          status: "Plugin API 연결 상태",
-        }
-      : {
-          title: "Review Plugin",
-          loading: "Checking the connection.",
-          error: "Could not connect to the Plugin API.",
-          status: "Plugin API connection",
-        };
-  const health = useQuery({
-    queryKey: scopedKey(context, "review", "health"),
-    queryFn: () => host.call<ReviewHealthResponse>("health"),
-  });
-
+  const text = getText(context);
+  // 기업 사용자는 경로와 무관하게 안내와 criteria.list 읽기 전용 목록만 본다(reviews·documents 요청 없음).
+  if (context.user.role === "company") {
+    return (
+      <section className="rounded-lg border border-border bg-card p-6">
+        <h1 className="text-heading-4 font-semibold">{text.title}</h1>
+        <p role="status">{text.companyUnavailable}</p>
+        <div className="mt-4">
+          <CompanyCriteria host={host} context={context} />
+        </div>
+      </section>
+    );
+  }
+  const route = parseRoute(context.location);
+  if (route.name === "notFound") {
+    return <NotFound text={text} onBack={() => host.navigate("/")} />;
+  }
+  // 사용자·workspace가 바뀌면 작성 중 입력 상태까지 새로 시작한다.
+  const key = `${context.user.id}:${context.workspaceId}`;
   return (
-    <section className="rounded-lg border border-border bg-card p-6">
-      <h1 className="text-heading-4 font-semibold">{text.title}</h1>
-      {health.isPending ? <p role="status">{text.loading}</p> : null}
-      {health.isError ? <p role="alert">{text.error}</p> : null}
-      {health.data ? (
-        <p className="text-muted-foreground">
-          {text.status}: {health.data.status}
-        </p>
-      ) : null}
-    </section>
+    <CriteriaList
+      key={key}
+      host={host}
+      context={context}
+      activeId={route.name === "criterion" ? route.id : null}
+    />
   );
 };
