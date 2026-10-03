@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { ExternalLink } from "lucide-react";
-import { Button } from "@biyard/components";
+import { Button, Input, Label } from "@biyard/components";
 import type { UseQueryResult } from "@tanstack/react-query";
 import type { ListDocumentsResponse } from "@interview/api-types/ListDocumentsResponse";
 import { LoadingNotice, QueryError } from "./common";
@@ -24,6 +25,7 @@ export function EvidencePicker({
   onToggle: (id: string, checked: boolean) => void;
   onPreview: (id: string, label: string) => void;
 }) {
+  const [query, setQuery] = useState("");
   if (documents.isPending) return <LoadingNotice text={text} />;
   if (documents.isError || !documents.data) {
     return (
@@ -36,11 +38,24 @@ export function EvidencePicker({
   }
   const items = documents.data.documents;
   const hasReady = items.some((doc) => doc.status === "ready");
+  const needle = query.trim().toLowerCase();
+  const visible = needle ? items.filter((doc) => doc.title.toLowerCase().includes(needle)) : items;
   return (
     <div className="space-y-3">
       {hasReady ? null : <p>{text.noReadyDocuments}</p>}
+      <div className="space-y-1">
+        <Label htmlFor="evidence-search">{text.searchByTitle}</Label>
+        <Input
+          id="evidence-search"
+          type="search"
+          value={query}
+          disabled={disabled}
+          onChange={(event) => setQuery(event.target.value)}
+        />
+      </div>
+      {items.length > 0 && visible.length === 0 ? <p>{text.noMatchingDocuments}</p> : null}
       <ul className="space-y-2">
-        {items.map((doc) => {
+        {visible.map((doc) => {
           const selectable = doc.status === "ready";
           const inputId = `evidence-${doc.id}`;
           const reasonId = `${inputId}-reason`;

@@ -6,6 +6,8 @@ import type { GetDocumentResponse } from "@interview/api-types/GetDocumentRespon
 import type { ListCriteriaResponse } from "@interview/api-types/ListCriteriaResponse";
 import type { ListDocumentsResponse } from "@interview/api-types/ListDocumentsResponse";
 import type { ListReviewsResponse } from "@interview/api-types/ListReviewsResponse";
+import type { UpdateReviewRequest } from "@interview/api-types/UpdateReviewRequest";
+import type { UpdateReviewResponse } from "@interview/api-types/UpdateReviewResponse";
 
 interface Deps {
   host: PluginHost;
@@ -53,6 +55,16 @@ export function useCreateReview({ host, context }: Deps) {
     mutationFn: (request: CreateReviewRequest) =>
       host.call<CreateReviewResponse>("reviews.create", request),
     // 갱신이 끝날 때까지 pending을 유지해 입력이 다시 열리지 않게 한다.
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: scopedKey(context, "review", "reviews") }),
+  });
+}
+
+export function useUpdateReview({ host, context }: Deps) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (request: UpdateReviewRequest) =>
+      host.call<UpdateReviewResponse>("reviews.update", request),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: scopedKey(context, "review", "reviews") }),
   });
