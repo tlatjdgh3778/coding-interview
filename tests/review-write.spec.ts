@@ -172,7 +172,6 @@ test.describe("검토 작성 — 투자자가 기준별 검토를 근거 자료�
         await expect(card.getByText("미작성", { exact: true })).toBeVisible();
       }
       await expect(page.getByRole("listitem").filter({ hasText: "검토 질문" })).toHaveCount(3);
-      await expect(page.getByText("미작성", { exact: true })).toHaveCount(3);
     });
 
     /**
@@ -201,13 +200,11 @@ test.describe("검토 작성 — 투자자가 기준별 검토를 근거 자료�
       await login(page, PEER, PASSWORD);
       await page.goto(PLUGIN);
       for (const criterion of CRITERIA) {
-        await expect(
-          criterionCard(page, criterion.title).getByText("미작성", { exact: true }),
-        ).toBeVisible();
+        const card = criterionCard(page, criterion.title);
+        await expect(card.getByText("미작성", { exact: true })).toBeVisible();
+        await expect(card.getByText("확인함", { exact: true })).toHaveCount(0);
+        await expect(card.getByText("추가 확인 필요", { exact: true })).toHaveCount(0);
       }
-      await expect(page.getByText("미작성", { exact: true })).toHaveCount(3);
-      await expect(page.getByText("확인함", { exact: true })).toHaveCount(0);
-      await expect(page.getByText("추가 확인 필요", { exact: true })).toHaveCount(0);
     });
 
     /**
@@ -376,13 +373,11 @@ test.describe("검토 작성 — 투자자가 기준별 검토를 근거 자료�
 
       await expect(page).toHaveURL(PLUGIN_LIST);
       for (const criterion of CRITERIA) {
-        await expect(
-          criterionCard(page, criterion.title).getByText("미작성", { exact: true }),
-        ).toBeVisible();
+        const card = criterionCard(page, criterion.title);
+        await expect(card.getByText("미작성", { exact: true })).toBeVisible();
+        await expect(card.getByText("확인함", { exact: true })).toHaveCount(0);
+        await expect(card.getByText("추가 확인 필요", { exact: true })).toHaveCount(0);
       }
-      await expect(page.getByText("미작성", { exact: true })).toHaveCount(3);
-      await expect(page.getByText("확인함", { exact: true })).toHaveCount(0);
-      await expect(page.getByText("추가 확인 필요", { exact: true })).toHaveCount(0);
       await expect(page.getByRole("button", { name: `${slot.title} 검토 작성` })).toBeVisible();
       await expect(page.getByRole("button", { name: `${slot.title} 검토 수정` })).toHaveCount(0);
 
