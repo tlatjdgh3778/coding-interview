@@ -63,6 +63,12 @@ const ko = {
   },
   fileName: "파일명",
   content: "본문",
+  summaryTitle: "검토 현황",
+  summaryWritten: "작성",
+  summaryNote: "내 검토 진행 상태이며 회사의 합의나 투자 승인 상태가 아닙니다.",
+  evidenceLoading: "불러오는 중",
+  evidenceTitleUnavailable: "자료 제목을 불러오지 못했습니다",
+  evidencePreviewTitle: "근거 자료",
 };
 
 type Widen<T> = T extends string
@@ -135,6 +141,12 @@ const en: Text = {
   },
   fileName: "File name",
   content: "Content",
+  summaryTitle: "Review status",
+  summaryWritten: "Written",
+  summaryNote: "This is your own review progress, not a company consensus or investment approval.",
+  evidenceLoading: "Loading",
+  evidenceTitleUnavailable: "Could not load the document title",
+  evidencePreviewTitle: "Evidence document",
 };
 
 export function getText(context: PluginContext): Text {
