@@ -1,10 +1,13 @@
+import { useState } from "react";
 import { Button, Card, CardContent, CardHeader, CardTitle } from "@biyard/components";
 import type { PluginProps } from "@interview/plugin-sdk/react";
 import type { Review } from "@interview/api-types/Review";
 import { LoadingNotice, NotFound, QueryError, StatusBadge } from "./common";
 import { CriterionModal } from "./criterion-page";
+import { DocumentPreview } from "./document-view";
 import { useCriteria, useDocuments, useReviews } from "./hooks";
 import { criterionPath } from "./route";
+import { ReviewSummary } from "./summary";
 import { getText } from "./text";
 
 /** 기준 목록. activeId가 있으면 목록을 그대로 렌더한 채 그 위에 모달을 연다. */
@@ -16,6 +19,9 @@ export function CriteriaList({
   const text = getText(context);
   const criteria = useCriteria({ host, context });
   const reviews = useReviews({ host, context });
+  const documents = useDocuments({ host, context });
+  const [preview, setPreview] = useState<{ id: string; label: string } | null>(null);
+  const titles = new Map((documents.data?.documents ?? []).map((doc) => [doc.id, doc.title]));
   const criteriaData = criteria.data?.criteria;
   const reviewsData = reviews.data?.reviews;
   const active = activeId === null ? null : criteriaData?.find((item) => item.id === activeId);
@@ -27,6 +33,7 @@ export function CriteriaList({
   return (
     <section className="space-y-4">
       <h1 className="text-heading-4 font-semibold">{text.title}</h1>
+      <ReviewSummary host={host} context={context} />
       {criteria.isError ? (
         <QueryError
           message={text.criteriaError}
@@ -69,7 +76,15 @@ export function CriteriaList({
                       <span className="sr-only">{text.question}: </span>
                       {criterion.reviewQuestion}
                     </p>
-                    {review ? <SavedSummary host={host} context={context} review={review} /> : null}
+                    {review ? (
+                      <SavedSummary
+                        context={context}
+                        review={review}
+                        titles={titles}
+                        documentsPending={documents.isPending}
+                        onPreview={setPreview}
+                      />
+                    ) : null}
                     <Button
                       variant="outline"
                       className="min-h-11"
@@ -95,14 +110,32 @@ export function CriteriaList({
           onClose={() => host.navigate("/")}
         />
       ) : null}
+      {preview ? (
+        <DocumentPreview
+          host={host}
+          context={context}
+          documentId={preview.id}
+          label={preview.label}
+          onClose={() => setPreview(null)}
+        />
+      ) : null}
     </section>
   );
 }
 
-function SavedSummary({ host, context, review }: PluginProps & { review: Review }) {
+function SavedSummary({
+  context,
+  review,
+  titles,
+  documentsPending,
+  onPreview,
+}: Pick<PluginProps, "context"> & {
+  review: Review;
+  titles: Map<string, string>;
+  documentsPending: boolean;
+  onPreview: (target: { id: string; label: string }) => void;
+}) {
   const text = getText(context);
-  const documents = useDocuments({ host, context });
-  const titles = new Map((documents.data?.documents ?? []).map((doc) => [doc.id, doc.title]));
   const updatedAt = new Intl.DateTimeFormat(context.locale, {
     dateStyle: "medium",
     timeStyle: "short",
@@ -113,14 +146,23 @@ function SavedSummary({ host, context, review }: PluginProps & { review: Review 
         {review.comment}
       </p>
       <ul className="flex flex-wrap gap-2">
-        {review.evidenceDocumentIds.map((id) => (
-          <li
-            key={id}
-            className="max-w-full break-all rounded-full bg-secondary px-2.5 py-1 text-caption text-secondary-foreground"
-          >
-            {titles.get(id) ?? id}
-          </li>
-        ))}
+        {review.evidenceDocumentIds.map((id) => {
+          const title = titles.get(id);
+          const shown =
+            title ?? (documentsPending ? text.evidenceLoading : text.evidenceTitleUnavailable);
+          return (
+            <li key={id} className="max-w-full">
+              <button
+                type="button"
+                aria-label={text.previewOpen(shown)}
+                onClick={() => onPreview({ id, label: title ?? text.evidencePreviewTitle })}
+                className="min-h-11 max-w-full break-all rounded-full bg-secondary px-2.5 py-1 text-caption text-secondary-foreground"
+              >
+                {shown}
+              </button>
+            </li>
+          );
+        })}
       </ul>
       <p className="text-caption text-muted-foreground">
         {text.lastModified}: <time dateTime={review.updatedAt}>{updatedAt}</time>
